@@ -1,54 +1,94 @@
-name: Build & Release
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: 
+      - main
+      - develop
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       
+      issues: write         
+      pull-requests: write  
+    
+    outputs:
+      published: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
+      is_prerelease: ${{ steps.semantic.outputs.new_release_prerelease }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Run Semantic Release
+      id: semantic
+      uses: cycjimmy/semantic-release-action@v4
+      with:
+        extra_plugins: |
+          @semantic-release/changelog
+          @semantic-release/git
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-pack:
     runs-on: windows-latest
+    needs: release
+    if: needs.release.outputs.published == 'true'
+
+    permissions:
+      contents: write
+
+    env:
+      BUNDLE_NAME: LiveTranslate-Overlay
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+    - name: Setup .NET 10 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v5
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v5
 
-      - name: Build Portable Bundle
-        shell: pwsh
-        run: |
-          dotnet publish src/ui/LiveTranslateOverlay.csproj -c Release -r win-x64 --self-contained true -p:Publishing=true -p:DebugType=None -p:DebugSymbols=false -o dist
+    - name: Build Portable Bundle
+      shell: pwsh
+      run: |
+        dotnet publish src/ui/LiveTranslateOverlay.csproj -c Release -r win-x64 --self-contained true -p:Publishing=true -p:DebugType=None -p:DebugSymbols=false -o dist
 
-          uv python install 3.11 --install-dir dist/runtime/python
-          Copy-Item -Path (Get-Command uv).Source -Destination dist/runtime/uv.exe -Force
+        uv python install 3.11 --install-dir dist/runtime/python
+        Copy-Item -Path (Get-Command uv).Source -Destination dist/runtime/uv.exe -Force
 
-          New-Item -ItemType Directory -Force -Path dist/engine, dist/config
-          Copy-Item -Path src/engine/* -Destination dist/engine -Recurse -Force -Exclude "__pycache__", "*.pyc", ".venv", "venv"
-          Copy-Item -Path config/appsettings.json -Destination dist/config/appsettings.json -Force
+        New-Item -ItemType Directory -Force -Path dist/engine, dist/config
+        Copy-Item -Path src/engine/* -Destination dist/engine -Recurse -Force -Exclude "__pycache__", "*.pyc", ".venv", "venv"
+        Copy-Item -Path config/appsettings.json -Destination dist/config/appsettings.json -Force
 
-          Compress-Archive -Path dist/* -DestinationPath LiveTranslate-Overlay-Portable-win-x64.zip -Force
+        $version = "${{ needs.release.outputs.version }}"
+        $archiveName = "${{ env.BUNDLE_NAME }}-Portable-v$version-win-x64.zip"
+        
+        Compress-Archive -Path dist/* -DestinationPath $archiveName -Force
+        echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: LiveTranslate-Overlay-Portable-win-x64
-          path: LiveTranslate-Overlay-Portable-win-x64.zip
-
-      - name: Publish Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Release v1.0.${{ github.run_number }}
-          files: LiveTranslate-Overlay-Portable-win-x64.zip
-          generate_release_notes: true
-          make_latest: true
+    - name: Upload GitHub Release Asset
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ needs.release.outputs.version }}
+        name: "Release v${{ needs.release.outputs.version }}"
+        files: ${{ env.ARCHIVE_NAME }}
+        prerelease: ${{ needs.release.outputs.is_prerelease == 'true' }}
+        generate_release_notes: true
+        make_latest: ${{ needs.release.outputs.is_prerelease != 'true' }}
