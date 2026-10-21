@@ -32,15 +32,21 @@
     </PackageReference>
   </ItemGroup>
 
-  <Target Name="OrganizePublishedFiles" AfterTargets="Publish">
+  <Target Name="MoveLibrariesToLibFolder" AfterTargets="Publish">
     <ItemGroup>
+      <CoreRuntimeFiles Include="$(PublishDir)$(AssemblyName).dll;
+                                 $(PublishDir)hostfxr.dll;
+                                 $(PublishDir)hostpolicy.dll;
+                                 $(PublishDir)coreclr.dll;
+                                 $(PublishDir)clrjit.dll;
+                                 $(PublishDir)System.Private.CoreLib.dll" />
+
       <FilesToMove Include="$(PublishDir)*.dll;$(PublishDir)*.pdb"
-                   Exclude="$(PublishDir)$(AssemblyName).dll;
-                            $(PublishDir)hostfxr.dll;
-                            $(PublishDir)hostpolicy.dll" />
+                   Exclude="@(CoreRuntimeFiles)" />
     </ItemGroup>
-    
+
     <MakeDir Directories="$(PublishDir)lib" />
-    <Move SourceFiles="@(FilesToMove)" DestinationFolder="$(PublishDir)lib" />
+    <Move SourceFiles="@(FilesToMove)" DestinationFolder="$(PublishDir)lib" OverwriteReadOnlyFiles="true" />
+    <Delete Files="$(PublishDir)$(AssemblyName).deps.json" />
   </Target>
 </Project>
