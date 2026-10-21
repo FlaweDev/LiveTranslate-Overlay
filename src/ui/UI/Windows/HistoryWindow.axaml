@@ -1,0 +1,145 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LiveTranslateOverlay.UI.Windows.HistoryWindow"
+        Width="780"
+        Height="560"
+        MinWidth="580"
+        MinHeight="320"
+        Background="#12131A"
+        Title="История реплик">
+
+    <Window.Styles>
+        <!-- Стиль неоновых кнопок на плавающей панели -->
+        <Style Selector="Button.neonBtn">
+            <Setter Property="Background" Value="#1B1D29" />
+            <Setter Property="Foreground" Value="#E2F1FF" />
+            <Setter Property="BorderBrush" Value="#4000E5FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.neonBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25293A" />
+            <Setter Property="BorderBrush" Value="#00E5FF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.neonBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#00E5FF" />
+            <Setter Property="Foreground" Value="#12131A" />
+        </Style>
+    </Window.Styles>
+
+    <!-- Внешняя рамка с легким неоновым свечением -->
+    <Border BorderBrush="#3500E5FF"
+            BorderThickness="1"
+            Margin="4"
+            CornerRadius="6"
+            Background="#14151E">
+        <Grid x:Name="RootGrid">
+
+            <!-- Прокручиваемая история реплик (растет снизу вверх) -->
+            <ScrollViewer x:Name="HistoryScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="18,65,18,65">
+                <StackPanel x:Name="HistoryContainer"
+                            VerticalAlignment="Bottom"
+                            Spacing="12" />
+            </ScrollViewer>
+
+            <!-- Слой для плавающей панели и зон предпросмотра (Preview) -->
+            <Canvas x:Name="OverlayCanvas"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ClipToBounds="True">
+
+                <!-- Preview верхней позиции -->
+                <Border x:Name="TopPreviewBorder"
+                        IsVisible="False"
+                        IsHitTestVisible="False"
+                        CornerRadius="8"
+                        Background="#1800E5FF"
+                        BorderBrush="#00E5FF"
+                        BorderThickness="1.5"
+                        BoxShadow="0 0 15 1 #4500E5FF" />
+
+                <!-- Preview нижней позиции -->
+                <Border x:Name="BottomPreviewBorder"
+                        IsVisible="False"
+                        IsHitTestVisible="False"
+                        CornerRadius="8"
+                        Background="#1800E5FF"
+                        BorderBrush="#00E5FF"
+                        BorderThickness="1.5"
+                        BoxShadow="0 0 15 1 #4500E5FF" />
+
+                <!-- Плавающая панель с кнопками -->
+                <Border x:Name="FloatingToolbar"
+                        Background="#E8181A24"
+                        BorderBrush="#8800E5FF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="6,6,12,6"
+                        BoxShadow="0 0 14 0 #3500E5FF">
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8"
+                                VerticalAlignment="Center">
+
+                        <!-- Специальная область для перетаскивания панели -->
+                        <Border x:Name="DragHandle"
+                                Background="#232634"
+                                BorderBrush="#4000E5FF"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Padding="8,4"
+                                Cursor="SizeAll"
+                                ToolTip.Tip="Зажмите и перетащите панель">
+                            <TextBlock Text="⋮⋮"
+                                       Foreground="#00E5FF"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- Кнопка Пауза / Продолжить -->
+                        <Button x:Name="PauseResumeButton"
+                                Classes="neonBtn"
+                                Content="⏸ Пауза распознавания"
+                                Click="OnPauseResumeClick" />
+
+                        <!-- Кнопка Перезапуск модели -->
+                        <Button x:Name="RestartModelButton"
+                                Classes="neonBtn"
+                                Content="↻ Перезапуск модели"
+                                Click="OnRestartModelClick" />
+
+                        <!-- Разделитель -->
+                        <Border Width="1"
+                                Height="22"
+                                Background="#5500E5FF"
+                                Margin="2,0" />
+
+                        <!-- Кнопка записи времени -->
+                        <Button x:Name="RecordTimeButton"
+                                Classes="neonBtn"
+                                Content="⏱ Запись времени"
+                                Click="OnRecordTimeClick" />
+
+                        <!-- Отображение текущего времени с секундами -->
+                        <TextBlock x:Name="LiveClockText"
+                                   Text="00:00:00"
+                                   Foreground="#00E5FF"
+                                   FontFamily="Consolas, Monospace"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   Margin="4,0,0,0" />
+                    </StackPanel>
+                </Border>
+            </Canvas>
+        </Grid>
+    </Border>
+</Window>

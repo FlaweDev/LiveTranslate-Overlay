@@ -1,0 +1,129 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LiveTranslateOverlay.UI.Windows.DependencyInstallWindow"
+        Width="660"
+        Height="470"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#12131A"
+        Title="Установка компонентов PyTorch и CUDA">
+
+    <Window.Styles>
+        <Style Selector="Button.neonBtn">
+            <Setter Property="Background" Value="#1B1D29" />
+            <Setter Property="Foreground" Value="#E2F1FF" />
+            <Setter Property="BorderBrush" Value="#4000E5FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.neonBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25293A" />
+            <Setter Property="BorderBrush" Value="#00E5FF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.dangerBtn">
+            <Setter Property="Background" Value="#231722" />
+            <Setter Property="Foreground" Value="#FFB8D1" />
+            <Setter Property="BorderBrush" Value="#66FF007F" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Styles>
+
+    <Border BorderBrush="#3500E5FF"
+            BorderThickness="1"
+            Margin="6"
+            CornerRadius="6"
+            Background="#14151E"
+            Padding="20">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+
+            <!-- Заголовок и сводка -->
+            <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,12">
+                <TextBlock Text="Требуется установка библиотек PyTorch"
+                           Foreground="#00E5FF"
+                           FontSize="18"
+                           FontWeight="Bold" />
+                <TextBlock x:Name="PackageInfoText"
+                           Foreground="#B8C4D9"
+                           FontSize="13"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="CudaInfoText"
+                           Foreground="#8A94A6"
+                           FontSize="12" />
+            </StackPanel>
+
+            <!-- Блок предупреждения о совместимости CUDA -->
+            <Border Grid.Row="1"
+                    x:Name="WarningBanner"
+                    IsVisible="False"
+                    Background="#2B1D14"
+                    BorderBrush="#FF9800"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    Padding="12,8"
+                    Margin="0,0,0,12">
+                <TextBlock x:Name="WarningText"
+                           Foreground="#FFD180"
+                           FontSize="12"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Живой лог установки -->
+            <Border Grid.Row="2"
+                    Background="#0E0F15"
+                    BorderBrush="#25293A"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="10">
+                <ScrollViewer x:Name="LogScrollViewer" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="LogOutputText"
+                               Foreground="#A6B4C9"
+                               FontFamily="Consolas, Monospace"
+                               FontSize="11.5"
+                               TextWrapping="Wrap"
+                               Text="Ожидание подтверждения установки..." />
+                </ScrollViewer>
+            </Border>
+
+            <!-- Прогресс-бар -->
+            <StackPanel Grid.Row="3" Spacing="4" Margin="0,12,0,12">
+                <ProgressBar x:Name="InstallProgressBar"
+                             Minimum="0"
+                             Maximum="100"
+                             Value="0"
+                             Height="6"
+                             Foreground="#00E5FF"
+                             Background="#25293A" />
+                <TextBlock x:Name="CurrentStatusText"
+                           Text="Готово к загрузке (~2.5 ГБ)"
+                           Foreground="#00E5FF"
+                           FontSize="12"
+                           HorizontalAlignment="Right" />
+            </StackPanel>
+
+            <!-- Кнопки -->
+            <StackPanel Grid.Row="4"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="12">
+                <Button x:Name="CancelButton"
+                        Classes="dangerBtn"
+                        Content="Отмена и выход"
+                        Click="OnCancelClick" />
+                <Button x:Name="InstallButton"
+                        Classes="neonBtn"
+                        Content="⬇ Установить библиотеки"
+                        Click="OnInstallClick" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

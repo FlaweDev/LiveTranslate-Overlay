@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LiveTranslateOverlay.UI.Windows.ModelDownloadWindow"
+        Width="640"
+        Height="440"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#12131A"
+        Title="Загрузка необходимых моделей">
+
+    <Window.Styles>
+        <Style Selector="Button.neonBtn">
+            <Setter Property="Background" Value="#1B1D29" />
+            <Setter Property="Foreground" Value="#E2F1FF" />
+            <Setter Property="BorderBrush" Value="#4000E5FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.neonBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25293A" />
+            <Setter Property="BorderBrush" Value="#00E5FF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.dangerBtn">
+            <Setter Property="Background" Value="#231722" />
+            <Setter Property="Foreground" Value="#FFB8D1" />
+            <Setter Property="BorderBrush" Value="#66FF007F" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Styles>
+
+    <Border BorderBrush="#3500E5FF"
+            BorderThickness="1"
+            Margin="6"
+            CornerRadius="6"
+            Background="#14151E"
+            Padding="20">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
+
+            <!-- Заголовок -->
+            <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,14">
+                <TextBlock Text="Требуется загрузка нейросетевых моделей"
+                           Foreground="#00E5FF"
+                           FontSize="18"
+                           FontWeight="Bold" />
+                <TextBlock x:Name="SubtitleDescriptionText"
+                           Text="Следующие модели отсутствуют локально и будут загружены по указанным путям:"
+                           Foreground="#B8C4D9"
+                           FontSize="13"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Список моделей -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ModelsListContainer" Spacing="10" />
+            </ScrollViewer>
+
+            <!-- Общий статус -->
+            <TextBlock Grid.Row="2"
+                       x:Name="OverallStatusText"
+                       Text="Ожидание подтверждения..."
+                       Foreground="#D4D8E2"
+                       FontSize="13"
+                       Margin="0,12,0,12" />
+
+            <!-- Кнопки управления -->
+            <StackPanel Grid.Row="3"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="12">
+                <Button x:Name="CancelButton"
+                        Classes="dangerBtn"
+                        Content="Отмена и выход"
+                        Click="OnCancelClick" />
+                <Button x:Name="ConfirmButton"
+                        Classes="neonBtn"
+                        Content="⬇ Скачать модели"
+                        Click="OnConfirmClick" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
