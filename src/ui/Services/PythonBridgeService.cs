@@ -44,7 +44,7 @@ public sealed class PythonBridgeService : IDisposable
         string? overrideConfigFilePath = null)
     {
         _settings = settings;
-        _appRootDir = Path.GetFullPath(appRootDir);
+        _appRootDir = Path.GetFullPath(appRootDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         _configFilePath = Path.GetFullPath(configFilePath);
         _overrideConfigFilePath = !string.IsNullOrWhiteSpace(overrideConfigFilePath) && File.Exists(overrideConfigFilePath)
             ? Path.GetFullPath(overrideConfigFilePath)

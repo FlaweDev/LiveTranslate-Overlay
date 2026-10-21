@@ -43,20 +43,21 @@ public sealed class PythonDependenciesInstaller
     public PythonDependenciesInstaller(AppSettings settings, string appRootDir)
     {
         _settings = settings;
-        _appRootDir = Path.GetFullPath(appRootDir);
+        _appRootDir = Path.GetFullPath(appRootDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
-
 
     public async Task<bool> AreAllDependenciesInstalledAsync()
     {
         string pythonExe = ResolvePythonExe();
-        const string checkScript =
-            "import torch, torchaudio, nemo.collections.asr, soundcard, soundfile, resampy, llama_cpp; print('OK')";
+        const string fastCheckScript =
+            "import importlib.util, sys; " +
+            "mods = ['torch', 'torchaudio', 'nemo', 'soundcard', 'soundfile', 'resampy', 'llama_cpp']; " +
+            "sys.exit(0 if all(importlib.util.find_spec(m) is not None for m in mods) else 1)";
 
         var startInfo = new ProcessStartInfo
         {
             FileName = pythonExe,
-            Arguments = $"-c \"{checkScript}\"",
+            Arguments = $"-c \"{fastCheckScript}\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

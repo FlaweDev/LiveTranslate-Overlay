@@ -18,44 +18,17 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override async void OnFrameworkInitializationCompleted()
+    public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
             var (appRoot, baseConfigPath, overrideConfigPath) = ResolvePaths();
             var settings = AppSettings.Load(baseConfigPath, overrideConfigPath);
 
-            if (settings.General.Pytorch.AutoInstall)
-            {
-                var installer = new PythonDependenciesInstaller(settings, appRoot);
-                bool ready = await installer.AreAllDependenciesInstalledAsync();
+            var bridgeService = new PythonBridgeService(settings, appRoot, baseConfigPath, overrideConfigPath);
+            var overlayWindow = new OverlayWindow(settings, bridgeService, appRoot);
 
-                if (!ready)
-                {
-                    var cudaReport = await installer.CheckCudaCompatibilityAsync();
-                    var installTcs = new TaskCompletionSource<bool>();
-
-                    var installWindow = new DependencyInstallWindow(
-                        installer,
-                        settings.General.Pytorch,
-                        cudaReport,
-                        onInstallCompleted: () => installTcs.TrySetResult(true),
-                        onInstallCancelled: () => installTcs.TrySetResult(false));
-
-                    installWindow.Show();
-
-                    bool installed = await installTcs.Task;
-                    if (!installed)
-                    {
-                        desktop.Shutdown();
-                        return;
-                    }
-                }
-            }
-
-            StartMainApplication(desktop, settings, appRoot, baseConfigPath, overrideConfigPath);
+            desktop.MainWindow = overlayWindow;
         }
 
         base.OnFrameworkInitializationCompleted();

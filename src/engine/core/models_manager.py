@@ -88,7 +88,7 @@ class ModelsManager:
             raise ValueError(f"Download URL is empty for model '{model.name}'.")
 
         model.target_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = model.target_path.with_suffix(model.target_path.suffix + ".part")
+        temp_path = model.target_path.parent / f"{model.target_path.name}.part"
 
         # Мгновенно уведомляем UI о старте соединения с сервером
         if on_progress:

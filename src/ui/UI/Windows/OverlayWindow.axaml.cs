@@ -18,6 +18,7 @@ public partial class OverlayWindow : Window
     private readonly SubtitleLayoutManager _layoutManager;
     private readonly SubtitleOrchestrator _orchestrator;
     private readonly HistoryWindow _historyWindow;
+    private readonly string _appRootDir = string.Empty;
     private ModelDownloadWindow? _downloadWindow;
 
     public OverlayWindow()
@@ -30,12 +31,14 @@ public partial class OverlayWindow : Window
         _historyWindow = null!;
     }
 
-    public OverlayWindow(AppSettings settings, PythonBridgeService bridgeService)
+
+    public OverlayWindow(AppSettings settings, PythonBridgeService bridgeService, string appRootDir)
     {
         InitializeComponent();
 
         _settings = settings;
         _bridgeService = bridgeService;
+        _appRootDir = appRootDir;
         _layoutManager = new SubtitleLayoutManager(SubtitleContainer, _settings.Ui);
         _historyWindow = new HistoryWindow();
         _orchestrator = new SubtitleOrchestrator(_layoutManager, _historyWindow, _settings);
@@ -58,7 +61,7 @@ public partial class OverlayWindow : Window
         WindowClickThroughHelper.EnableClickThrough(this);
     }
 
-    private void OnWindowLoaded(object? sender, RoutedEventArgs e)
+    private async void OnWindowLoaded(object? sender, RoutedEventArgs e)
     {
         var screen = Screens.Primary?.WorkingArea ?? new PixelRect(0, 0, 1920, 1080);
 
@@ -70,6 +73,44 @@ public partial class OverlayWindow : Window
         _layoutManager.ConfigureDimensions(Width, Height, fontSize);
 
         _historyWindow.Show();
+        _historyWindow.AddSystemRecord("🚀 Программа запускается. Проверка компонентов...");
+        _orchestrator.ShowTemporaryNotice("Запуск программы и проверка окружения...", 3000);
+
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+
+        if (_settings.General.Pytorch.AutoInstall)
+        {
+            var installer = new PythonDependenciesInstaller(_settings, _appRootDir);
+            bool depsInstalled = await installer.AreAllDependenciesInstalledAsync();
+
+            if (!depsInstalled)
+            {
+                _historyWindow.AddSystemRecord("📦 Требуется установка библиотек Python...");
+                var cudaReport = await installer.CheckCudaCompatibilityAsync();
+                var installTcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+
+                var depWindow = new DependencyInstallWindow(
+                    installer,
+                    _settings.General.Pytorch,
+                    cudaReport,
+                    onInstallCompleted: () => installTcs.TrySetResult(true),
+                    onInstallCancelled: () => installTcs.TrySetResult(false));
+
+                await depWindow.ShowDialog(_historyWindow);
+
+                bool installed = await installTcs.Task;
+                if (!installed)
+                {
+                    Close();
+                    return;
+                }
+
+                _historyWindow.AddSystemRecord("✅ Библиотеки успешно установлены.");
+            }
+        }
+
+        _historyWindow.AddSystemRecord("⏳ Инициализация нейросетевого движка...");
+        _orchestrator.ShowTemporaryNotice("Инициализация движка и проверка моделей...", 3500);
         _bridgeService.Start();
     }
 
