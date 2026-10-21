@@ -116,7 +116,7 @@
 
 3. **Запустите .NET-приложение**
    ```powershell
-   dotnet run --project src/ui/LiveTranslate-Overlay.csproj
+   dotnet run --project src/ui/LiveTranslateOverlay.csproj
    ```
 
 ## 🤝 Благодарности (Credits)
