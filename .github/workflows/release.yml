@@ -1,30 +1,21 @@
-name: Build & Release Portable Bundle
+name: Build & Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build Windows x64 Portable (.NET 10)
+  release:
     runs-on: windows-latest
 
-    env:
-      BUNDLE_NAME: LiveTranslate-Overlay
-      DIST_DIR: dist/LiveTranslate-Overlay
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET 10 SDK
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -32,83 +23,32 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Prepare bundle directory structure
+      - name: Build Portable Bundle
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/runtime/python"
-          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/engine"
-          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/config"
+          dotnet publish src/ui/LiveTranslateOverlay.csproj -c Release -r win-x64 --self-contained true -p:Publishing=true -p:DebugType=None -p:DebugSymbols=false -o dist
 
-      - name: Publish .NET 10 UI (Self-Contained, libraries moved to lib/)
-        shell: pwsh
-        run: |
-          dotnet publish src/ui/LiveTranslateOverlay.csproj `
-            -c Release `
-            -r win-x64 `
-            --self-contained true `
-            -p:Publishing=true `
-            -o "${{ env.DIST_DIR }}"
+          uv python install 3.11 --install-dir dist/runtime/python
+          Copy-Item -Path (Get-Command uv).Source -Destination dist/runtime/uv.exe -Force
 
-      - name: Bundle Standalone Python 3.11 & uv
-        shell: pwsh
-        run: |
-          uv python install 3.11 --install-dir "${{ env.DIST_DIR }}/runtime/python"
+          New-Item -ItemType Directory -Force -Path dist/engine, dist/config
+          Copy-Item -Path src/engine/* -Destination dist/engine -Recurse -Force -Exclude "__pycache__", "*.pyc", ".venv", "venv"
+          Copy-Item -Path config/appsettings.json -Destination dist/config/appsettings.json -Force
 
-          $uvPath = (Get-Command uv).Source
-          Copy-Item -Path $uvPath -Destination "${{ env.DIST_DIR }}/runtime/uv.exe" -Force
+          Compress-Archive -Path dist/* -DestinationPath LiveTranslate-Overlay-Portable-win-x64.zip -Force
 
-      - name: Copy Python Engine & Production Config
-        shell: pwsh
-        run: |
-          Copy-Item -Path "src/engine/*" `
-                    -Destination "${{ env.DIST_DIR }}/engine" `
-                    -Recurse `
-                    -Force `
-                    -Exclude "__pycache__", "*.pyc", ".venv", "venv", ".pytest_cache"
-
-          Copy-Item -Path "config/appsettings.json" `
-                    -Destination "${{ env.DIST_DIR }}/config/appsettings.json" `
-                    -Force
-
-          if (Test-Path "README.md") {
-            Copy-Item -Path "README.md" -Destination "${{ env.DIST_DIR }}/README.md" -Force
-          }
-          if (Test-Path "LICENSE") {
-            Copy-Item -Path "LICENSE" -Destination "${{ env.DIST_DIR }}/LICENSE" -Force
-          }
-
-      - name: Clean up debug symbols (.pdb)
-        shell: pwsh
-        run: |
-          $pdbFiles = Get-ChildItem -Path "${{ env.DIST_DIR }}" -Filter "*.pdb" -Recurse
-          foreach ($file in$pdbFiles) {
-            Remove-Item -Path $file.FullName -Force
-          }
-
-      - name: Determine Release Version & Create Archive
-        shell: pwsh
-        run: |
-          $tagVersion = "v1.0.${{ github.run_number }}"
-          $archiveName = "${{ env.BUNDLE_NAME }}-Portable-$tagVersion-win-x64.zip"
-
-          Compress-Archive -Path "${{ env.DIST_DIR }}/*" -DestinationPath $archiveName -Force
-
-          Add-Content -Path $env:GITHUB_ENV -Value "RELEASE_TAG=$tagVersion"
-          Add-Content -Path $env:GITHUB_ENV -Value "ARCHIVE_NAME=$archiveName"
-
-      - name: Upload Build Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARCHIVE_NAME }}
-          path: ${{ env.ARCHIVE_NAME }}
-          if-no-files-found: error
+          name: LiveTranslate-Overlay-Portable-win-x64
+          path: LiveTranslate-Overlay-Portable-win-x64.zip
 
-      - name: Create GitHub Release (on merge to main)
+      - name: Publish Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: "Release ${{ env.RELEASE_TAG }}"
-          files: ${{ env.ARCHIVE_NAME }}
+          tag_name: v1.0.${{ github.run_number }}
+          name: Release v1.0.${{ github.run_number }}
+          files: LiveTranslate-Overlay-Portable-win-x64.zip
           generate_release_notes: true
           make_latest: true
