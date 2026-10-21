@@ -1,3 +1,10 @@
+# [1.0.0-dev.4](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-10-21)
+
+
+### Bug Fixes
+
+* model download path ([e4fefff](https://github.com/FlaweDev/LiveTranslate-Overlay/commit/e4fefff0e0ea5aaafbcff498334317c926cd34ab))
+
 # [1.0.0-dev.3](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-10-21)
 
 
