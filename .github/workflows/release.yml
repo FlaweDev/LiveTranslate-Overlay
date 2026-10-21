@@ -71,6 +71,7 @@ jobs:
         dotnet publish src/ui/LiveTranslateOverlay.csproj -c Release -r win-x64 --self-contained true -p:Publishing=true -p:DebugType=None -p:DebugSymbols=false -o dist
 
         uv python install 3.11 --install-dir dist/runtime/python
+        Get-ChildItem -Path dist/runtime/python -Filter "EXTERNALLY-MANAGED" -Recurse | Remove-Item -Force        
         Copy-Item -Path (Get-Command uv).Source -Destination dist/runtime/uv.exe -Force
 
         New-Item -ItemType Directory -Force -Path dist/engine, dist/config

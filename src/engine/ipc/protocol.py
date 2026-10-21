@@ -64,16 +64,22 @@ class IpcChannel:
         self.send_event("error", {"message": error_message})
 
     def wait_for_command(self, expected_command: str) -> Dict[str, Any]:
-        for line in self._stdin:
-            line = line.strip()
+        while True:
+            line = self._stdin.readline()
             if not line:
+                sys.exit(0)
+
+            clean_line = line.lstrip("\ufeff").strip()
+            if not clean_line:
                 continue
+
             try:
-                data = json.loads(line)
-                if data.get("command") == expected_command:
+                data = json.loads(clean_line)
+                cmd = data.get("command")
+                if cmd == expected_command:
                     return data
-                if data.get("command") == "cancel":
+                if cmd == "cancel":
                     sys.exit(0)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                print(f"[IPC Warning] Malformed command JSON: {clean_line} ({exc})", file=sys.stderr)
                 continue
-        sys.exit(0)

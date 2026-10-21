@@ -46,9 +46,7 @@ public sealed class PythonDependenciesInstaller
         _appRootDir = Path.GetFullPath(appRootDir);
     }
 
-    /// <summary>
-    /// Проверяет, установлены ли и PyTorch, и основные пакеты из requirements.txt.
-    /// </summary>
+
     public async Task<bool> AreAllDependenciesInstalledAsync()
     {
         string pythonExe = ResolvePythonExe();
@@ -139,30 +137,30 @@ public sealed class PythonDependenciesInstaller
         bool useUv = File.Exists(bundledUv);
 
         // --- ЭТАП 1: Установка PyTorch и Torchaudio ---
-        string torchPackages = string.Join(" ", _settings.General.Pytorch.Packages);
-        string indexUrl = _settings.General.Pytorch.GetResolvedIndexUrl();
+string torchPackages = string.Join(" ", _settings.General.Pytorch.Packages);
+string indexUrl = _settings.General.Pytorch.GetResolvedIndexUrl();
 
-        string stage1Title = $"Этап 1/2: Установка PyTorch ({_settings.General.Pytorch.CudaVersion})...";
-        string stage1Args = useUv
-            ? $"pip install --python \"{pythonExe}\" {torchPackages} --index-url {indexUrl}"
-            : $"-m pip install {torchPackages} --index-url {indexUrl} --progress-bar on";
+string stage1Title = $"Этап 1/2: Установка PyTorch ({_settings.General.Pytorch.CudaVersion})...";
+string stage1Args = useUv
+    ? $"pip install --python \"{pythonExe}\" --break-system-packages {torchPackages} --index-url {indexUrl}"
+    : $"-m pip install --break-system-packages {torchPackages} --index-url {indexUrl} --progress-bar on";
 
-        bool stage1Ok = await RunPackageManagerCommandAsync(
-            useUv ? bundledUv : pythonExe,
-            stage1Args,
-            stage1Title,
-            baseProgressOffset: 0,
-            progressScale: 0.5,
-            onProgress,
-            cancellationToken).ConfigureAwait(false);
+bool stage1Ok = await RunPackageManagerCommandAsync(
+    useUv ? bundledUv : pythonExe,
+    stage1Args,
+    stage1Title,
+    baseProgressOffset: 0,
+    progressScale: 0.5,
+    onProgress,
+    cancellationToken).ConfigureAwait(false);
 
-        if (!stage1Ok) return false;
+if (!stage1Ok) return false;
 
-        // --- ЭТАП 2: Установка остальных библиотек из requirements.txt ---
-        string stage2Title = "Этап 2/2: Установка библиотек из requirements.txt (NeMo, llama.cpp и др.)...";
-        string stage2Args = useUv
-            ? $"pip install --python \"{pythonExe}\" -r \"{requirementsPath}\""
-            : $"-m pip install -r \"{requirementsPath}\" --progress-bar on";
+// --- ЭТАП 2: Установка остальных библиотек из requirements.txt ---
+string stage2Title = "Этап 2/2: Установка библиотек из requirements.txt (NeMo, llama.cpp и др.)...";
+string stage2Args = useUv
+    ? $"pip install --python \"{pythonExe}\" --break-system-packages -r \"{requirementsPath}\""
+    : $"-m pip install --break-system-packages -r \"{requirementsPath}\" --progress-bar on";
 
         bool stage2Ok = await RunPackageManagerCommandAsync(
             useUv ? bundledUv : pythonExe,

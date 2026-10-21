@@ -69,6 +69,14 @@ public partial class ModelDownloadWindow : Window
         Close();
     }
 
+    public void ShowError(string message)
+    {
+        OverallStatusText.Text = $"❌ Ошибка загрузки: {message}";
+        OverallStatusText.Foreground = new SolidColorBrush(Color.Parse("#FF5252"));
+        ConfirmButton.IsEnabled = true;
+        ConfirmButton.Content = "Повторить";
+    }
+
     private void PopulateModelsList(IReadOnlyList<MissingModelItemDto> models)
     {
         ModelsListContainer.Children.Clear();

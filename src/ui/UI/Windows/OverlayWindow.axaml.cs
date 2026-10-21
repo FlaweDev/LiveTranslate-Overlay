@@ -93,6 +93,11 @@ public partial class OverlayWindow : Window
                     _historyWindow.AddSystemRecord("Модели успешно загружены.");
                     break;
 
+                case ErrorEventDto error when _downloadWindow is { IsVisible: true }:
+                    _downloadWindow.ShowError(error.Message);
+                    _orchestrator.ProcessEvent(ipcEvent);
+                    break;
+
                 default:
                     _orchestrator.ProcessEvent(ipcEvent);
                     break;
