@@ -103,7 +103,7 @@
 
 1. **Клонируйте репозиторий:**
    ```powershell
-   git clone [https://github.com/FlaweDev/LiveTranslate-Overlay.git](https://github.com/FlaweDev/LiveTranslate-Overlay.git)
+   git clone https://github.com/FlaweDev/LiveTranslate-Overlay.git
    cd LiveTranslate-Overlay
    ```
 
