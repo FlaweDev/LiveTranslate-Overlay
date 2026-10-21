@@ -6,60 +6,104 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
+    name: Build Windows x64 Portable Bundle
     runs-on: windows-latest
+
+    env:
+      BUNDLE_NAME: LiveTranslate-Overlay
+      DIST_DIR: dist/LiveTranslate-Overlay
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Prepare Directory Structure
+      - name: Prepare bundle directory structure
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "dist/LiveTranslate-Overlay/runtime"
-          New-Item -ItemType Directory -Force -Path "dist/LiveTranslate-Overlay/engine"
+          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/runtime/python"
+          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/engine"
+          New-Item -ItemType Directory -Force -Path "${{ env.DIST_DIR }}/config"
 
-      - name: Install Embedded Standalone Python & uv
-        shell: pwsh
-        run: |
-          # Установка автономного рантайма Python 3.11 в папку дистрибутива
-          uv python install 3.11 --install-dir "dist/LiveTranslate-Overlay/runtime/python"
-          
-          # Копирование исполняемого файла uv для работы портативного окружения
-          Copy-Item (Get-Command uv).Source "dist/LiveTranslate-Overlay/runtime/uv.exe"
-
-      - name: Publish .NET UI
+      - name: Publish .NET UI (Self-Contained, libraries moved to lib/)
         shell: pwsh
         run: |
           dotnet publish src/ui/LiveTranslateOverlay.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
-            -o dist/LiveTranslate-Overlay
+            -p:Publishing=true `
+            -o "${{ env.DIST_DIR }}"
 
-      - name: Copy Engine and Config Files
+      - name: Bundle Standalone Python 3.11 & uv
         shell: pwsh
         run: |
-          Copy-Item "src/engine/*" "dist/LiveTranslate-Overlay/engine" -Recurse -Exclude ".*", "__pycache__"
-          Copy-Item "config/config.default.json" "dist/LiveTranslate-Overlay/config.json"
-          Copy-Item "config/settings.default.json" "dist/LiveTranslate-Overlay/settings.json"
+          # Скачиваем изолированный портативный Python 3.11 внутрь бандла
+          uv python install 3.11 --install-dir "${{ env.DIST_DIR }}/runtime/python"
 
-      - name: Archive Bundle
+          # Копируем исполняемый файл uv.exe для быстрой установки PyTorch и зависимостей у пользователя
+          $uvPath = (Get-Command uv).Source
+          Copy-Item -Path $uvPath -Destination "${{ env.DIST_DIR }}/runtime/uv.exe" -Force
+
+      - name: Copy Python Engine & Production Config
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/LiveTranslate-Overlay" -DestinationPath "LiveTranslate-Overlay-Portable-win-x64.zip"
+          # Копируем все модули Python-движка (asr, core, ipc, translation, requirements.txt и др.)
+          Copy-Item -Path "src/engine/*" `
+                    -Destination "${{ env.DIST_DIR }}/engine" `
+                    -Recurse `
+                    -Force `
+                    -Exclude "__pycache__", "*.pyc", ".venv", "venv", ".pytest_cache"
 
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+          # Копируем только основной рабочий конфиг (без appsettings.Development.json)
+          Copy-Item -Path "config/appsettings.json" `
+                    -Destination "${{ env.DIST_DIR }}/config/appsettings.json" `
+                    -Force
+
+          if (Test-Path "README.md") {
+            Copy-Item -Path "README.md" -Destination "${{ env.DIST_DIR }}/README.md" -Force
+          }
+          if (Test-Path "LICENSE") {
+            Copy-Item -Path "LICENSE" -Destination "${{ env.DIST_DIR }}/LICENSE" -Force
+          }
+
+      - name: Clean up unnecessary build artifacts
+        shell: pwsh
+        run: |
+          # Удаляем отладочные символы (.pdb), если они не нужны в конечном релизе
+          Get-ChildItem -Path "${{ env.DIST_DIR }}" -Filter "*.pdb" -Recurse | Remove-Item -Force
+
+      - name: Create Portable ZIP Archive
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.ref_name }}" -like "v*") { "${{ github.ref_name }}" } else { "dev-$env:GITHUB_SHA".Substring(0, 11) }
+          $archiveName = "${{ env.BUNDLE_NAME }}-Portable-$version-win-x64.zip"
+          
+          Compress-Archive -Path "${{ env.DIST_DIR }}/*" -DestinationPath $archiveName -Force
+          echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+
+      - name: Upload Artifact (for manual workflow_dispatch runs)
+        uses: actions/upload-artifact@v4
         with:
-          files: LiveTranslate-Overlay-Portable-win-x64.zip
+          name: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release (on version tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE_NAME }}
+          generate_release_notes: true
