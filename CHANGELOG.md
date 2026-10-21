@@ -1,3 +1,10 @@
+# [1.0.0-dev.5](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-10-21)
+
+
+### Bug Fixes
+
+* function parameter ([ad5d027](https://github.com/FlaweDev/LiveTranslate-Overlay/commit/ad5d0277deea3fd955b0c3284103eb0794be33d0))
+
 # [1.0.0-dev.4](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-10-21)
 
 
