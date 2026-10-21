@@ -13,13 +13,9 @@
   <PropertyGroup Condition="'$(Publishing)' == 'true' or '$(Configuration)' == 'Release'">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>false</PublishSingleFile>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(Publishing)' == 'true' or $(Configuration) == 'Release'">
-    <RuntimeHostConfigurationOption Include="APP_PATHS" Value="lib" />
-    <RuntimeHostConfigurationOption Include="NATIVE_DLL_SEARCH_DIRECTORIES" Value="lib" />  
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
@@ -31,22 +27,4 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-
-  <Target Name="MoveLibrariesToLibFolder" AfterTargets="Publish">
-    <ItemGroup>
-      <CoreRuntimeFiles Include="$(PublishDir)$(AssemblyName).dll;
-                                 $(PublishDir)hostfxr.dll;
-                                 $(PublishDir)hostpolicy.dll;
-                                 $(PublishDir)coreclr.dll;
-                                 $(PublishDir)clrjit.dll;
-                                 $(PublishDir)System.Private.CoreLib.dll" />
-
-      <FilesToMove Include="$(PublishDir)*.dll;$(PublishDir)*.pdb"
-                   Exclude="@(CoreRuntimeFiles)" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(PublishDir)lib" />
-    <Move SourceFiles="@(FilesToMove)" DestinationFolder="$(PublishDir)lib" OverwriteReadOnlyFiles="true" />
-    <Delete Files="$(PublishDir)$(AssemblyName).deps.json" />
-  </Target>
 </Project>
