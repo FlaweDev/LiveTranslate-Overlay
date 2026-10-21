@@ -1,3 +1,10 @@
+# [1.0.0-dev.2](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* program startup ([740e898](https://github.com/FlaweDev/LiveTranslate-Overlay/commit/740e898684648aaf2a2ac585ee8f934ba47973f1))
+
 # 1.0.0-dev.1 (2026-10-21)
 
 
