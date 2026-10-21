@@ -13,8 +13,6 @@ jobs:
   build-and-release:
     name: Build Windows x64 Portable (.NET 10)
     runs-on: windows-latest
-    # Запускаем при ручном вызове или при слиянии (merge) в main
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
 
     env:
       BUNDLE_NAME: LiveTranslate-Overlay
@@ -51,19 +49,6 @@ jobs:
             -p:Publishing=true `
             -o "${{ env.DIST_DIR }}"
 
-      - name: Fix runtimeconfig.json probing paths for native libraries
-        shell: pwsh
-        run: |
-          # Преобразуем относительный путь NATIVE_DLL_SEARCH_DIRECTORIES в корректный формат для Windows
-          $rcPath = "${{ env.DIST_DIR }}/LiveTranslateOverlay.runtimeconfig.json"
-          if (Test-Path $rcPath) {
-            $json = Get-Content$rcPath -Raw | ConvertFrom-Json
-            $appPathsProp =$json.runtimeOptions.configProperties | Get-Member -Name "APP_PATHS"
-            if (-not $appPathsProp) {$json.runtimeOptions | Add-Member -NotePropertyName "additionalProbingPaths" -NotePropertyValue @("lib") -Force
-            }
-            $json \vert{} ConvertTo-Json -Depth 10 \vert{} Set-Content$rcPath -Encoding UTF8
-          }
-
       - name: Bundle Standalone Python 3.11 & uv
         shell: pwsh
         run: |
@@ -95,7 +80,10 @@ jobs:
       - name: Clean up debug symbols (.pdb)
         shell: pwsh
         run: |
-          Get-ChildItem -Path "${{ env.DIST_DIR }}" -Filter "*.pdb" -Recurse | Remove-Item -Force
+          $pdbFiles = Get-ChildItem -Path "${{ env.DIST_DIR }}" -Filter "*.pdb" -Recurse
+          foreach ($file in$pdbFiles) {
+            Remove-Item -Path $file.FullName -Force
+          }
 
       - name: Determine Release Version & Create Archive
         shell: pwsh
@@ -105,8 +93,8 @@ jobs:
 
           Compress-Archive -Path "${{ env.DIST_DIR }}/*" -DestinationPath $archiveName -Force
 
-          echo "RELEASE_TAG=$tagVersion" >> $env:GITHUB_ENV
-          echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "RELEASE_TAG=$tagVersion"
+          Add-Content -Path $env:GITHUB_ENV -Value "ARCHIVE_NAME=$archiveName"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
