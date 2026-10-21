@@ -1,0 +1,65 @@
+name: Build Portable Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Prepare Directory Structure
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "dist/LiveTranslate-Overlay/runtime"
+          New-Item -ItemType Directory -Force -Path "dist/LiveTranslate-Overlay/engine"
+
+      - name: Install Embedded Standalone Python & uv
+        shell: pwsh
+        run: |
+          # Установка автономного рантайма Python 3.11 в папку дистрибутива
+          uv python install 3.11 --install-dir "dist/LiveTranslate-Overlay/runtime/python"
+          
+          # Копирование исполняемого файла uv для работы портативного окружения
+          Copy-Item (Get-Command uv).Source "dist/LiveTranslate-Overlay/runtime/uv.exe"
+
+      - name: Publish .NET UI
+        shell: pwsh
+        run: |
+          dotnet publish src/ui/LiveTranslateOverlay.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -o dist/LiveTranslate-Overlay
+
+      - name: Copy Engine and Config Files
+        shell: pwsh
+        run: |
+          Copy-Item "src/engine/*" "dist/LiveTranslate-Overlay/engine" -Recurse -Exclude ".*", "__pycache__"
+          Copy-Item "config/config.default.json" "dist/LiveTranslate-Overlay/config.json"
+          Copy-Item "config/settings.default.json" "dist/LiveTranslate-Overlay/settings.json"
+
+      - name: Archive Bundle
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/LiveTranslate-Overlay" -DestinationPath "LiveTranslate-Overlay-Portable-win-x64.zip"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: LiveTranslate-Overlay-Portable-win-x64.zip

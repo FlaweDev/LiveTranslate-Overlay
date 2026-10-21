@@ -1,0 +1,102 @@
+# ==========================================
+# Нейросетевые модели и кэш загрузки
+# ==========================================
+models/
+*.nemo
+*.gguf
+*.bin
+*.pt
+*.pth
+*.onnx
+*.part
+
+# ==========================================
+# Портативная сборка и дистрибутивы
+# ==========================================
+dist/
+runtime/
+lib/
+*.zip
+*.7z
+*.tar.gz
+
+# Временные файлы вывода транскрибации
+live_output.json
+output_transcription.json
+
+# ==========================================
+# .NET / C# / Avalonia
+# ==========================================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+out/
+publish/
+
+# Пользовательские настройки Visual Studio / Rider
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Профили публикации и кэш NuGet
+Properties/PublishProfiles/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ==========================================
+# Python & uv
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+.env/
+ENV/
+
+# Упаковка и сборка Python
+build/
+develop-eggs/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Кэши инструментов и фреймворков (PyTorch / NeMo / HuggingFace)
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+lightning_logs/
+nemo_experiments/
+wandb/
+
+# ==========================================
+# Системные и временные файлы ОС
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.bak
+*.swp
+*~

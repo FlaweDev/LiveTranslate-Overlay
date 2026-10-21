@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LiveTranslateOverlay (Dev)": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}
