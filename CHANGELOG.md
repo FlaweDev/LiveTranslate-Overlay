@@ -1,3 +1,10 @@
+# [1.0.0-dev.3](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-10-21)
+
+
+### Bug Fixes
+
+* lib download ([b8e0fb6](https://github.com/FlaweDev/LiveTranslate-Overlay/commit/b8e0fb645cf7a665dd84bf27417c8eee3f551fdf))
+
 # [1.0.0-dev.2](https://github.com/FlaweDev/LiveTranslate-Overlay/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-10-21)
 
 
