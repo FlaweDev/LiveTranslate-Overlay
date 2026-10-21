@@ -54,18 +54,29 @@ class ModelDescriptor:
     download_url: str
 
     def resolve_path(self, root_dir: Path, default_models_dir: str) -> Path:
-        if self.override_path.strip():
-            custom = Path(self.override_path.strip())
+        clean_root = Path(str(root_dir).strip().strip('"').strip("'"))
+        
+        effective_filename = self.filename.strip().strip('"').strip("'")
+        if not effective_filename and self.download_url:
+            effective_filename = self.download_url.rstrip("/").split("/")[-1]
+        if not effective_filename:
+            effective_filename = f"{self.key}_model.bin"
+
+        clean_override = self.override_path.strip().strip('"').strip("'")
+        if clean_override:
+            custom = Path(clean_override)
             if not custom.is_absolute():
-                custom = root_dir / custom
+                custom = clean_root / custom
             if custom.suffix:
                 return custom.resolve()
-            return (custom / self.filename).resolve()
+            return (custom / effective_filename).resolve()
 
-        base_dir = Path(default_models_dir.strip() or "models")
+        clean_default_dir = default_models_dir.strip().strip('"').strip("'") or "models"
+        base_dir = Path(clean_default_dir)
         if not base_dir.is_absolute():
-            base_dir = root_dir / base_dir
-        return (base_dir / self.filename).resolve()
+            base_dir = clean_root / base_dir
+
+        return (base_dir / effective_filename).resolve()
 
 
 @dataclass(frozen=True)

@@ -44,7 +44,7 @@ public sealed class PythonBridgeService : IDisposable
         string? overrideConfigFilePath = null)
     {
         _settings = settings;
-        _appRootDir = Path.GetFullPath(appRootDir);
+        _appRootDir = Path.GetFullPath(appRootDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         _configFilePath = Path.GetFullPath(configFilePath);
         _overrideConfigFilePath = !string.IsNullOrWhiteSpace(overrideConfigFilePath) && File.Exists(overrideConfigFilePath)
             ? Path.GetFullPath(overrideConfigFilePath)
@@ -57,18 +57,20 @@ public sealed class PythonBridgeService : IDisposable
     {
         Stop();
 
-
         string scriptFullPath = PythonEnvironmentResolver.ResolveScriptPath(
-            _appRootDir, 
+            _appRootDir,
             _settings.General.PythonScriptPath);
-            
+
         string pythonExe = PythonEnvironmentResolver.ResolveExecutable(_appRootDir, scriptFullPath);
         string workingDir = Path.GetDirectoryName(scriptFullPath) ?? _appRootDir;
-        string args = $"\"{scriptFullPath}\" --config \"{_configFilePath}\" --root \"{_appRootDir}\"";
+
+        string args = $"-u \"{scriptFullPath}\" --config \"{_configFilePath}\" --root \"{_appRootDir}\"";
         if (_overrideConfigFilePath != null)
         {
             args += $" --override-config \"{_overrideConfigFilePath}\"";
         }
+
+        var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         var startInfo = new ProcessStartInfo
         {
@@ -80,13 +82,14 @@ public sealed class PythonBridgeService : IDisposable
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            StandardInputEncoding = Encoding.UTF8,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8
+            StandardInputEncoding = utf8NoBom,
+            StandardOutputEncoding = utf8NoBom,
+            StandardErrorEncoding = utf8NoBom
         };
         startInfo.Environment["PYTHONIOENCODING"] = "utf-8";
         startInfo.Environment["PYTHONUTF8"] = "1";
-        
+        startInfo.Environment["PYTHONUNBUFFERED"] = "1";
+
         try
         {
             _process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
@@ -115,7 +118,7 @@ public sealed class PythonBridgeService : IDisposable
     {
         if (_process == null || _process.HasExited) return;
 
-        string json = JsonSerializer.Serialize(command);
+        string json = JsonSerializer.Serialize<IpcCommandDto>(command);
         await _process.StandardInput.WriteLineAsync(json).ConfigureAwait(false);
         await _process.StandardInput.FlushAsync().ConfigureAwait(false);
     }

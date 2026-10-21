@@ -1,8 +1,6 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using LiveTranslateOverlay.Core.Configuration;
@@ -18,62 +16,18 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override async void OnFrameworkInitializationCompleted()
+    public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
             var (appRoot, baseConfigPath, overrideConfigPath) = ResolvePaths();
             var settings = AppSettings.Load(baseConfigPath, overrideConfigPath);
+            var bridgeService = new PythonBridgeService(settings, appRoot, baseConfigPath, overrideConfigPath);
 
-            if (settings.General.Pytorch.AutoInstall)
-            {
-                var installer = new PythonDependenciesInstaller(settings, appRoot);
-                bool ready = await installer.AreAllDependenciesInstalledAsync();
-
-                if (!ready)
-                {
-                    var cudaReport = await installer.CheckCudaCompatibilityAsync();
-                    var installTcs = new TaskCompletionSource<bool>();
-
-                    var installWindow = new DependencyInstallWindow(
-                        installer,
-                        settings.General.Pytorch,
-                        cudaReport,
-                        onInstallCompleted: () => installTcs.TrySetResult(true),
-                        onInstallCancelled: () => installTcs.TrySetResult(false));
-
-                    installWindow.Show();
-
-                    bool installed = await installTcs.Task;
-                    if (!installed)
-                    {
-                        desktop.Shutdown();
-                        return;
-                    }
-                }
-            }
-
-            StartMainApplication(desktop, settings, appRoot, baseConfigPath, overrideConfigPath);
+            desktop.MainWindow = new OverlayWindow(settings, bridgeService, appRoot);
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-
-    private static void StartMainApplication(
-        IClassicDesktopStyleApplicationLifetime desktop,
-        AppSettings settings,
-        string appRoot,
-        string baseConfigPath,
-        string? overrideConfigPath)
-    {
-        var bridgeService = new PythonBridgeService(settings, appRoot, baseConfigPath, overrideConfigPath);
-        var overlayWindow = new OverlayWindow(settings, bridgeService);
-
-        desktop.MainWindow = overlayWindow;
-        desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-        overlayWindow.Show();
     }
 
     private static (string AppRoot, string BaseConfigPath, string? OverrideConfigPath) ResolvePaths()
@@ -120,14 +74,14 @@ public partial class App : Application
 
         string? overrideConfig = null;
         bool isDevEnvironment =
-    #if DEBUG
+#if DEBUG
             true;
-    #else
+#else
             string.Equals(
                 Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"),
                 "Development",
                 StringComparison.OrdinalIgnoreCase);
-    #endif
+#endif
 
         if (isDevEnvironment)
         {

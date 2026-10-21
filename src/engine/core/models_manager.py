@@ -88,9 +88,23 @@ class ModelsManager:
             raise ValueError(f"Download URL is empty for model '{model.name}'.")
 
         model.target_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = model.target_path.with_suffix(model.target_path.suffix + ".part")
+        temp_path = model.target_path.parent / f"{model.target_path.name}.part"
 
-        with requests.get(model.download_url, stream=True, timeout=(10, 60)) as response:
+        # Мгновенно уведомляем UI о старте соединения с сервером
+        if on_progress:
+            on_progress(
+                DownloadProgress(
+                    model_key=model.key,
+                    model_name=model.name,
+                    downloaded_bytes=0,
+                    total_bytes=model.size_bytes,
+                    speed_mbps=0.0,
+                    percentage=0.0,
+                )
+            )
+
+        headers = {"User-Agent": "LiveTranslate-Overlay/1.0"}
+        with requests.get(model.download_url, stream=True, headers=headers, timeout=(15, 60)) as response:
             response.raise_for_status()
             total_bytes = int(response.headers.get("Content-Length", model.size_bytes))
 
